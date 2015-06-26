@@ -5,7 +5,7 @@
  * Description: Rollback (or forward) any WordPress.org plugin or theme like a boss.
  * Author: WordImpress
  * Author URI: http://wordimpress.com
- * Version: 1.2.2
+ * Version: 1.2.3
  * Text Domain: wpr
  * Domain Path: languages
  *
@@ -203,6 +203,7 @@ if ( ! class_exists( 'WP Rollback' ) ) : /**
 				wp_localize_script( 'wp_rollback_themes_script', 'wpr_vars', array(
 					'ajaxurl'               => admin_url(),
 					'ajax_loader'           => admin_url( 'images/spinner.gif' ),
+					'nonce'					=> wp_create_nonce( 'wpr_rollback_nonce' ),
 					'text_rollback_label'   => __( 'Rollback', 'wpr' ),
 					'text_not_rollbackable' => __( 'No Rollback Available: This is a non-WordPress.org theme.', 'wpr' ),
 					'text_loading_rollback' => __( 'Loading...', 'wpr' ),
@@ -290,14 +291,20 @@ if ( ! class_exists( 'WP Rollback' ) ) : /**
 
 			if ( ! empty( $args['plugin_version'] ) ) {
 				//Plugin: rolling back
+				check_admin_referer( 'wpr_rollback_nonce' );
+
 				include WP_ROLLBACK_PLUGIN_DIR . '/includes/class-rollback-plugin-upgrader.php';
 				include WP_ROLLBACK_PLUGIN_DIR . '/includes/rollback-action.php';
 			} elseif ( ! empty( $args['theme_version'] ) ) {
 				//Theme: rolling back
+				check_admin_referer( 'wpr_rollback_nonce' );
+
 				include WP_ROLLBACK_PLUGIN_DIR . '/includes/class-rollback-theme-upgrader.php';
 				include WP_ROLLBACK_PLUGIN_DIR . '/includes/rollback-action.php';
 			} else {
 				//This is the menu
+				check_admin_referer( 'wpr_rollback_nonce' );
+
 				include WP_ROLLBACK_PLUGIN_DIR . '/includes/rollback-menu.php';
 			}
 
@@ -390,7 +397,7 @@ if ( ! class_exists( 'WP Rollback' ) ) : /**
 			//Loop through versions and output in a radio list
 			foreach ( $this->versions as $version ) {
 
-				$versions_html .= '<label><input type="radio" value="' . $version . '" name="' . $type . '_version">' . $version;
+				$versions_html .= '<label><input type="radio" value="' . esc_attr( $version ) . '" name="' . $type . '_version">' . $version;
 
 				//Is this the current version?
 				if ( $version === $this->current_version ) {
@@ -424,6 +431,9 @@ if ( ! class_exists( 'WP Rollback' ) ) : /**
 			include_once ABSPATH . 'wp-admin/includes/plugin.php';
 
 			$plugin_file = WP_PLUGIN_DIR . '/' . $_GET['plugin_file'];
+
+			if( !file_exists( $plugin_file ) )
+				wp_die( 'Plugin you\'re referencing does not exist.' );
 
 			$plugin_data = get_plugin_data( $plugin_file, false, false );
 
@@ -503,6 +513,7 @@ if ( ! class_exists( 'WP Rollback' ) ) : /**
 				$rollback_url = add_query_arg( apply_filters( 'wpr_plugin_query_args', array(
 					'current_version' => urlencode( $plugin_data['Version'] ),
 					'rollback_name'   => urlencode( $plugin_data['Name'] ),
+					'_wpnonce' 		  => wp_create_nonce( 'wpr_rollback_nonce' )
 				) ), $rollback_url );
 			}
 
