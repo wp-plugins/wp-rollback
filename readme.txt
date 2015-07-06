@@ -110,7 +110,8 @@ This is the first version of this plugin. It is a tool for your convenience. Rol
 == Changelog ==
 
 = 1.2.3 =
-* Fixed: XSS hardening. Thanks @juliobox
+* Fixed: XSS hardening. Thanks @secupress
+* Fixed: CSRF patch regarding missing nonces. Thanks @secupress
 * Improvement: escape all of the things.
 
 = 1.2.2 =
